@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Juego de la Nubecita - Con Pájaros y Arcoíris</title>
+  <title>Juego de la Nubecita - Pájaros, Arcoíris y Modo Rainbow</title>
   <style>
     html, body {
       margin: 0;
       padding: 0;
       overflow: hidden;
-      background: #87CEEB; /* Cielo */
+      background: #87CEEB; /* Fondo tipo cielo */
     }
     canvas {
       display: block;
@@ -23,22 +23,21 @@
     // CONFIGURACIÓN DEL JUEGO
     // -----------------------------------------------------
     // Velocidades:
-    // La protagonista se mueve a PROTAGONISTA_SPEED, que es un 30% más rápido que los enemigos.
-    const PROTAGONISTA_SPEED = 4;
-    const SPEED_RATIO = 1.3; // Protagonista va 30% más rápido
-    const ENEMY_SPEED = PROTAGONISTA_SPEED / SPEED_RATIO; // Velocidad de las nubes negras
+    const PROTAGONISTA_SPEED = 4;            // Velocidad base de la nube protagonista.
+    const SPEED_RATIO = 1.3;                 // La protagonista se mueve 30% más rápido.
+    const ENEMY_SPEED = PROTAGONISTA_SPEED / SPEED_RATIO; // Velocidad de las nubes negras.
 
-    // Tamaños (radio)
+    // Tamaños (radio de la nube)
     const PROTAGONISTA_RADIUS = 20;
     const ENEMY_RADIUS = 20;
 
-    // Intervalos de aparición
-    const ENEMY_SPAWN_INTERVAL = 10000; // Nubes negras cada 10 segundos
-    const BIRD_SPAWN_INTERVAL = 5000;   // Pájaros cada 5 segundos
+    // Intervalos de aparición:
+    const ENEMY_SPAWN_INTERVAL = 10000; // Nube negra cada 10 segundos.
+    const BIRD_SPAWN_INTERVAL = 5000;   // Pájaro cada 5 segundos.
 
     // Duraciones (en milisegundos)
-    const RAINBOW_DURATION = 5000; // Duración del arcoíris en pantalla
-    const SMILE_DURATION = 2000;   // Duración de la sonrisa al tocar un pájaro
+    const RAINBOW_DURATION = 3000; // El arcoíris es visible 3 segundos.
+    const RAINBOW_MODE_DURATION = 5000; // Modo arcoíris activo 5 segundos.
 
     // -----------------------------------------------------
     // CONFIGURACIÓN DEL CANVAS
@@ -58,29 +57,29 @@
     let score = 0;
     let lastTime = performance.now();
 
-    // Protagonista: nube blanca con propiedades adicionales
+    // Protagonista: nube con propiedades adicionales.
     let protagonista = {
       x: canvas.width / 2,
       y: canvas.height / 2,
-      vx: PROTAGONISTA_SPEED, // Dirección inicial a la derecha
+      vx: PROTAGONISTA_SPEED, // Dirección inicial: a la derecha.
       vy: 0,
-      rainbow: false,        // Modo arcoíris (cuando es true, las nubes negras no hacen daño)
-      smileUntil: 0          // Tiempo hasta el que se dibuja la sonrisa
+      rainbow: false,         // Modo arcoíris activo.
+      rainbowUntil: 0         // Tiempo hasta el que permanece en modo arcoíris.
     };
 
-    // Arrays para enemigos y pájaros
+    // Arrays para enemigos (nubes negras) y pájaros.
     let enemies = [];
     let birds = [];
 
-    // Arcoíris (único activo en pantalla)
+    // Arcoíris: se crea al tocar un pájaro.
     let rainbowEntity = null;
 
-    // Variables para los spawners
-    let enemySpawner = null;
-    let birdSpawner = null;
+    // Spawners (intervalos de creación)
+    let enemySpawner = setInterval(spawnEnemy, ENEMY_SPAWN_INTERVAL);
+    let birdSpawner = setInterval(spawnBird, BIRD_SPAWN_INTERVAL);
 
     // -----------------------------------------------------
-    // FUNCIONES DEL JUEGO
+    // FUNCIONES DE GESTIÓN DEL JUEGO
     // -----------------------------------------------------
     function resetGame() {
       alert("¡Has perdido! Reiniciando juego.");
@@ -89,20 +88,17 @@
       protagonista.vx = PROTAGONISTA_SPEED;
       protagonista.vy = 0;
       protagonista.rainbow = false;
-      protagonista.smileUntil = 0;
+      protagonista.rainbowUntil = 0;
       score = 0;
       enemies = [];
       birds = [];
       rainbowEntity = null;
-      if (enemySpawner) clearInterval(enemySpawner);
-      enemySpawner = setInterval(spawnEnemy, ENEMY_SPAWN_INTERVAL);
-      if (birdSpawner) clearInterval(birdSpawner);
-      birdSpawner = setInterval(spawnBird, BIRD_SPAWN_INTERVAL);
       lastTime = performance.now();
+      // Reiniciamos con un primer enemigo.
       spawnEnemy();
     }
 
-    // Genera un enemigo (nube negra) en posición aleatoria y con dirección aleatoria.
+    // Genera una nube negra (enemigo) en posición y dirección aleatoria.
     function spawnEnemy() {
       const x = Math.random() * canvas.width;
       const y = Math.random() * canvas.height;
@@ -114,7 +110,7 @@
 
     // Genera un pájaro que entra desde la izquierda y se desplaza hacia la derecha.
     function spawnBird() {
-      const x = -20; // Comienza fuera de la pantalla a la izquierda
+      const x = -30; // Comienza fuera de la pantalla.
       const y = Math.random() * canvas.height;
       const BIRD_SPEED = 6;
       birds.push({ x, y, vx: BIRD_SPEED, vy: 0 });
@@ -130,7 +126,7 @@
       if (obj.y > canvas.height + radius) obj.y = -radius;
     }
 
-    // Detecta colisión entre dos círculos.
+    // Función de colisión entre dos círculos.
     function isColliding(a, b, rA, rB) {
       const dx = a.x - b.x;
       const dy = a.y - b.y;
@@ -138,33 +134,32 @@
       return distance < (rA + rB);
     }
 
-    // Dibuja una nube (se usa para los enemigos).
-    function drawCloud(x, y, radius, color) {
-      ctx.fillStyle = color;
-      ctx.beginPath();
-      ctx.arc(x, y, radius, Math.PI * 0.5, Math.PI * 1.5);
-      ctx.arc(x + radius, y - radius, radius, Math.PI, Math.PI * 2);
-      ctx.arc(x + radius * 2, y, radius, Math.PI * 1.5, Math.PI * 0.5);
-      ctx.arc(x + radius, y + radius, radius, 0, Math.PI);
-      ctx.closePath();
-      ctx.fill();
+    // Función de colisión entre un círculo y un rectángulo.
+    function isCircleRectColliding(circle, radius, rect) {
+      let closestX = Math.max(rect.x, Math.min(circle.x, rect.x + rect.width));
+      let closestY = Math.max(rect.y, Math.min(circle.y, rect.y + rect.height));
+      let dx = circle.x - closestX;
+      let dy = circle.y - closestY;
+      return (dx * dx + dy * dy) < (radius * radius);
     }
 
-    // Dibuja la nube protagonista con ojos y boca.
-    // Si está en modo arcoíris se pinta con un degradado multicolor.
-    // Si toca un pájaro se dibuja la boca sonriente durante SMILE_DURATION.
+    // -----------------------------------------------------
+    // FUNCIÓN DE DIBUJO
+    // -----------------------------------------------------
+    // Dibuja la nube (protagonista) con ojos y boca. Si está en modo rainbow, se pinta con franjas de colores y sonríe.
     function drawProtagonist(currentTime) {
       ctx.save();
       let x = protagonista.x, y = protagonista.y, radius = PROTAGONISTA_RADIUS;
-      let drawX = x - radius, drawY = y - radius;
+      // Dibuja la forma de la nube.
       ctx.beginPath();
-      ctx.arc(drawX, drawY, radius, Math.PI * 0.5, Math.PI * 1.5);
-      ctx.arc(drawX + radius, drawY - radius, radius, Math.PI, Math.PI * 2);
-      ctx.arc(drawX + radius * 2, drawY, radius, Math.PI * 1.5, Math.PI * 0.5);
-      ctx.arc(drawX + radius, drawY + radius, radius, 0, Math.PI);
+      ctx.arc(x - radius, y - radius, radius, Math.PI * 0.5, Math.PI * 1.5);
+      ctx.arc(x, y - 2 * radius, radius, Math.PI, Math.PI * 2);
+      ctx.arc(x + radius, y - radius, radius, Math.PI * 1.5, Math.PI * 0.5);
+      ctx.arc(x, y, radius, 0, Math.PI);
       ctx.closePath();
       if (protagonista.rainbow) {
-         let grad = ctx.createRadialGradient(x, y, radius/2, x, y, radius);
+         // Degradado multicolor para el modo rainbow.
+         let grad = ctx.createLinearGradient(x - radius, y - 2 * radius, x + radius, y);
          grad.addColorStop(0, "red");
          grad.addColorStop(0.16, "orange");
          grad.addColorStop(0.33, "yellow");
@@ -178,7 +173,7 @@
       }
       ctx.fill();
       
-      // Dibujar ojos
+      // Dibujar ojos.
       let eyeRadius = radius * 0.15;
       let eyeOffsetX = radius * 0.5;
       let eyeOffsetY = radius * 0.3;
@@ -189,16 +184,16 @@
       ctx.beginPath();
       ctx.arc(x + eyeOffsetX, y - eyeOffsetY, eyeRadius, 0, Math.PI * 2);
       ctx.fill();
-      
-      // Dibujar boca: sonrisa si currentTime está dentro del periodo de SMILE_DURATION
+
+      // Dibujar boca: si está en modo rainbow o si se activó la sonrisa, se dibuja una sonrisa.
       ctx.beginPath();
-      let mouthWidth = radius;
-      let mouthHeight = radius * 0.3;
-      if (currentTime < protagonista.smileUntil) {
-         ctx.arc(x, y + mouthHeight * 0.3, mouthWidth/2, 0, Math.PI, false);
+      if (protagonista.rainbow) {
+         // Sonrisa amplia.
+         ctx.arc(x, y + radius * 0.2, radius * 0.6, 0, Math.PI, false);
       } else {
-         ctx.moveTo(x - mouthWidth/2, y + mouthHeight * 0.5);
-         ctx.lineTo(x + mouthWidth/2, y + mouthHeight * 0.5);
+         // Boca neutra (línea recta).
+         ctx.moveTo(x - radius * 0.6, y + radius * 0.4);
+         ctx.lineTo(x + radius * 0.6, y + radius * 0.4);
       }
       ctx.strokeStyle = "black";
       ctx.lineWidth = 2;
@@ -206,36 +201,56 @@
       ctx.restore();
     }
 
-    // Dibuja un pájaro (representado con una forma simple).
-    function drawBird(bird) {
+    // Dibuja una nube negra (enemigo) usando la misma función de nube pero en color negro.
+    function drawCloud(x, y, radius, color) {
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(x, y, radius, Math.PI * 0.5, Math.PI * 1.5);
+      ctx.arc(x + radius, y - radius, radius, Math.PI, Math.PI * 2);
+      ctx.arc(x + radius * 2, y, radius, Math.PI * 1.5, Math.PI * 0.5);
+      ctx.arc(x + radius, y + radius, radius, 0, Math.PI);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // Dibuja un pájaro (paloma alargada) con aleteo.
+    function drawBird(bird, currentTime) {
       ctx.save();
       ctx.translate(bird.x, bird.y);
+      // Cuerpo: elíptico
+      ctx.fillStyle = "gray";
       ctx.beginPath();
-      ctx.moveTo(-10, 0);
-      ctx.quadraticCurveTo(0, -10, 10, 0);
-      ctx.quadraticCurveTo(0, 10, -10, 0);
-      ctx.strokeStyle = "brown";
-      ctx.lineWidth = 2;
-      ctx.stroke();
+      ctx.ellipse(0, 0, 15, 7, 0, 0, Math.PI * 2);
+      ctx.fill();
+      // Alas: se animan con oscilación para simular aleteo.
+      let wingOffset = Math.sin(currentTime / 200) * 5;
+      ctx.fillStyle = "darkgray";
+      // Ala izquierda
+      ctx.beginPath();
+      ctx.ellipse(-5, -7 + wingOffset, 8, 4, -0.5, 0, Math.PI * 2);
+      ctx.fill();
+      // Ala derecha
+      ctx.beginPath();
+      ctx.ellipse(-5, 7 + wingOffset, 8, 4, 0.5, 0, Math.PI * 2);
+      ctx.fill();
       ctx.restore();
     }
 
-    // Dibuja un arcoíris (se dibuja como varios arcos de colores).
+    // Dibuja el arcoíris como una franja horizontal que atraviesa la pantalla.
     function drawRainbow(rainbow) {
-      ctx.save();
+      // Se dibuja como un rectángulo con 7 bandas de colores.
       let colors = ["red", "orange", "yellow", "green", "blue", "indigo", "violet"];
-      let lineWidth = 5;
+      let bandHeight = rainbow.height / colors.length;
       for (let i = 0; i < colors.length; i++) {
-         ctx.beginPath();
-         ctx.arc(rainbow.x, rainbow.y, rainbow.radius + i * lineWidth, 0, Math.PI, false);
-         ctx.strokeStyle = colors[i];
-         ctx.lineWidth = lineWidth;
-         ctx.stroke();
+         ctx.fillStyle = colors[i];
+         ctx.fillRect(rainbow.x, rainbow.y, rainbow.width, bandHeight);
+         rainbow.y += bandHeight;
       }
-      ctx.restore();
+      // Restauramos la posición vertical original para futuras iteraciones.
+      rainbow.y -= rainbow.height;
     }
 
-    // Dibuja la puntuación en la esquina superior izquierda.
+    // Dibuja la puntuación.
     function drawScore() {
       ctx.fillStyle = "black";
       ctx.font = "20px Arial";
@@ -306,71 +321,85 @@
       let deltaTime = (currentTime - lastTime) / 16.67;
       lastTime = currentTime;
       score += deltaTime * 0.1;
+
+      // Limpiar el canvas.
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Actualizar y dibujar la protagonista
+      // Actualización de la posición del protagonista.
       updatePosition(protagonista, PROTAGONISTA_RADIUS, deltaTime);
+      // Si el modo rainbow está activo y se ha superado el tiempo, se desactiva.
+      if (protagonista.rainbow && currentTime > protagonista.rainbowUntil) {
+         protagonista.rainbow = false;
+      }
+      
+      // Dibujar la protagonista.
       drawProtagonist(currentTime);
 
-      // Actualizar y dibujar las nubes negras (enemigos)
-      for (let enemy of enemies) {
+      // Procesar enemigos (nubes negras): se recorre hacia atrás para poder eliminarlos.
+      for (let i = enemies.length - 1; i >= 0; i--) {
+        let enemy = enemies[i];
         updatePosition(enemy, ENEMY_RADIUS, deltaTime);
         drawCloud(enemy.x - ENEMY_RADIUS, enemy.y - ENEMY_RADIUS, ENEMY_RADIUS, "black");
-        if (!protagonista.rainbow && isColliding(protagonista, enemy, PROTAGONISTA_RADIUS, ENEMY_RADIUS)) {
-          resetGame();
-          return;
+        if (isColliding(protagonista, enemy, PROTAGONISTA_RADIUS, ENEMY_RADIUS)) {
+          if (protagonista.rainbow) {
+            // En modo rainbow, la colisión hace desaparecer la nube negra.
+            enemies.splice(i, 1);
+          } else {
+            resetGame();
+            return;
+          }
         }
       }
 
-      // Actualizar y dibujar los pájaros
+      // Procesar pájaros.
       for (let i = birds.length - 1; i >= 0; i--) {
         let bird = birds[i];
         bird.x += bird.vx * deltaTime;
         bird.y += bird.vy * deltaTime;
-        if (bird.x > canvas.width + 20) {
+        // El pájaro desaparece al salir de la pantalla.
+        if (bird.x > canvas.width + 30) {
           birds.splice(i, 1);
           continue;
         }
-        drawBird(bird);
-        // Si la protagonista choca con un pájaro:
+        drawBird(bird, currentTime);
+        // Si la nube toca un pájaro, se elimina el pájaro y se genera el arcoíris.
         if (isColliding(protagonista, bird, PROTAGONISTA_RADIUS, 15)) {
           birds.splice(i, 1);
-          if (!rainbowEntity) {
-            rainbowEntity = {
-              x: bird.x,
-              y: bird.y,
-              radius: 40,
-              spawnTime: currentTime
-            };
-          }
-          protagonista.smileUntil = currentTime + SMILE_DURATION;
+          // Se crea el arcoíris (se mostrará durante 3 segundos).
+          rainbowEntity = {
+            spawnTime: currentTime,
+            duration: RAINBOW_DURATION,
+            x: 0,
+            y: canvas.height / 2 - 50, // Se centra verticalmente; altura 100.
+            width: canvas.width,
+            height: 100
+          };
         }
       }
 
-      // Actualizar y dibujar el arcoíris
+      // Procesar el arcoíris.
       if (rainbowEntity) {
         drawRainbow(rainbowEntity);
-        if (isColliding(protagonista, rainbowEntity, PROTAGONISTA_RADIUS, rainbowEntity.radius)) {
+        // Se comprueba la colisión entre la nube y el arcoíris (usando colisión círculo-rectángulo).
+        if (isCircleRectColliding(protagonista, PROTAGONISTA_RADIUS, rainbowEntity)) {
           protagonista.rainbow = true;
+          protagonista.rainbowUntil = currentTime + RAINBOW_MODE_DURATION;
+          // Al activarse el modo rainbow, se elimina el arcoíris.
           rainbowEntity = null;
-        }
-        if (currentTime - rainbowEntity.spawnTime > RAINBOW_DURATION) {
+        } else if (currentTime - rainbowEntity.spawnTime > rainbowEntity.duration) {
+          // Si han pasado 3 segundos sin que la nube toque el arcoíris, se elimina.
           rainbowEntity = null;
         }
       }
 
-      // Dibujar la puntuación
+      // Dibujar la puntuación.
       drawScore();
 
       requestAnimationFrame(gameLoop);
     }
 
-    // -----------------------------------------------------
-    // INICIAR EL JUEGO
-    // -----------------------------------------------------
+    // Iniciar el juego: primer enemigo y comienzo del bucle.
     spawnEnemy();
-    enemySpawner = setInterval(spawnEnemy, ENEMY_SPAWN_INTERVAL);
-    birdSpawner = setInterval(spawnBird, BIRD_SPAWN_INTERVAL);
     requestAnimationFrame(gameLoop);
   </script>
 </body>
